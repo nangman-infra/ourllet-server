@@ -20,6 +20,8 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
       database: process.env.DATABASE_NAME ?? 'ourllet',
       entities: [LedgerEntry],
       synchronize: process.env.NODE_ENV !== 'production',
+      retryAttempts: 3,
+      retryDelay: 2000,
     }),
     HealthModule,
     EntriesModule,
