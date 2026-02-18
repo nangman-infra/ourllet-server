@@ -1,14 +1,21 @@
+# 의존성·빌드 산출물 제외 (COPY . 사용 시 대비)
 node_modules
+**/node_modules
 dist
+**/dist
+
+# 환경·설정
 .env
 .env.*
+!.env.example
 .git
 .gitignore
-*.md
 .dockerignore
 Dockerfile
 docker-compose*.yml
+*.md
 coverage
 .idea
 .vscode
 *.log
+*.tsbuildinfo
