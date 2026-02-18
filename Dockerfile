@@ -5,7 +5,8 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-COPY . .
+COPY src ./src
+COPY nest-cli.json tsconfig.json ./
 RUN npm run build
 
 FROM node:24-alpine AS runner
