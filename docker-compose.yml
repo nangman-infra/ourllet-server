@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ourllet
-      POSTGRES_PASSWORD: slow1234
+      POSTGRES_PASSWORD: ourllet1234
       POSTGRES_DB: ourllet
     ports:
       - "5432:5432"
@@ -24,7 +24,7 @@ services:
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
       DATABASE_USER: ourllet
-      DATABASE_PASSWORD: slow1234
+      DATABASE_PASSWORD: ourllet1234
       DATABASE_NAME: ourllet
       NODE_ENV: development
     depends_on:
