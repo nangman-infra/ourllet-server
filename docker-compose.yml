@@ -26,7 +26,7 @@ services:
       DATABASE_USER: ourllet
       DATABASE_PASSWORD: slow1234
       DATABASE_NAME: ourllet
-      NODE_ENV: production
+      NODE_ENV: development
     depends_on:
       postgres:
         condition: service_healthy
