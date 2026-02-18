@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ourllet
+      POSTGRES_PASSWORD: slow1234
       POSTGRES_DB: ourllet
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ourllet"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,8 +23,8 @@ services:
       PORT: 3001
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: postgres
+      DATABASE_USER: ourllet
+      DATABASE_PASSWORD: slow1234
       DATABASE_NAME: ourllet
       NODE_ENV: production
     depends_on:
