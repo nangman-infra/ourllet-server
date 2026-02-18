@@ -26,7 +26,8 @@ services:
       DATABASE_USER: ourllet
       DATABASE_PASSWORD: ourllet1234
       DATABASE_NAME: ourllet
-      NODE_ENV: development
+      NODE_ENV: production
+      CORS_ORIGIN: https://ourllet.junoshon.cloud
     depends_on:
       postgres:
         condition: service_healthy
