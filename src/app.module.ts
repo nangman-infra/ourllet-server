@@ -6,8 +6,11 @@ import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EntriesModule } from './modules/entries/entries.module';
 import { SummaryModule } from './modules/summary/summary.module';
+import { LedgerModule } from './modules/ledger/ledger.module';
 import { LedgerEntry } from './modules/entries/entities/ledger-entry.entity';
 import { User } from './modules/auth/entities/user.entity';
+import { Ledger } from './modules/ledger/entities/ledger.entity';
+import { LedgerMember } from './modules/ledger/entities/ledger-member.entity';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 @Module({
@@ -20,7 +23,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
       username: process.env.DATABASE_USER ?? 'postgres',
       password: process.env.DATABASE_PASSWORD ?? 'postgres',
       database: process.env.DATABASE_NAME ?? 'ourllet',
-      entities: [LedgerEntry, User],
+      entities: [LedgerEntry, User, Ledger, LedgerMember],
       // 앱 기동 시 users, ledger_entries 테이블 자동 생성. 마이그레이션 도입 전까지 사용.
       synchronize: true,
       retryAttempts: 3,
@@ -28,6 +31,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     }),
     HealthModule,
     AuthModule,
+    LedgerModule,
     EntriesModule,
     SummaryModule,
   ],

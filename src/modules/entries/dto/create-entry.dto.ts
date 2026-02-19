@@ -12,6 +12,10 @@ import { LEDGER_ENTRY_TYPE_EXPENSE, LEDGER_ENTRY_TYPE_INCOME } from '../entities
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateEntryDto {
+  @IsString()
+  @Matches(/^\d{6}$/, { message: 'ledgerId는 6자리 숫자예요.' })
+  ledgerId: string;
+
   @IsIn([LEDGER_ENTRY_TYPE_INCOME, LEDGER_ENTRY_TYPE_EXPENSE], {
     message: 'type은 income 또는 expense여야 해요.',
   })
