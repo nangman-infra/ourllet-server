@@ -39,14 +39,19 @@ pnpm run build && pnpm run start:prod
 | DATABASE_USER | DB 사용자 | postgres |
 | DATABASE_PASSWORD | DB 비밀번호 | postgres |
 | DATABASE_NAME | DB 이름 | ourllet |
-| GOOGLE_CLIENT_ID | Google OAuth Client ID (ID 토큰 검증) | — |
+| GOOGLE_CLIENT_ID | Google OAuth Client ID | — |
+| GOOGLE_CLIENT_SECRET | Google OAuth Client Secret (리다이렉트 방식 code 교환 시) | — |
+| BACKEND_APP_URL | 백엔드 기준 URL (OAuth redirect_uri, 예: https://api.junoshon.cloud) | — |
+| FRONTEND_APP_URL | 프론트 기준 URL (OAuth 성공 후 리다이렉트, 예: https://ourllet.junoshon.cloud) | — |
 | JWT_SECRET | 우리 서비스 JWT 서명 비밀키 | — |
 | JWT_EXPIRES_IN | JWT 만료 (예: 7d) | 7d |
 
 ## API 개요
 
 - `GET /api/health` — 상태 확인 (인증 불필요)
-- `POST /api/v1/auth/google` — Google 로그인, JWT 발급 (body: `{ idToken }`)
+- `GET /api/v1/auth/google` — Google OAuth 진입 (리다이렉트 → 구글 → 백엔드 콜백 → 프론트 `/login#token=...`)
+- `GET /api/v1/auth/callback/google` — Google 콜백 (내부 리다이렉트용, 직접 호출 X)
+- `POST /api/v1/auth/google` — Google 로그인 (body: `{ idToken }`, 선택)
 - `GET /api/v1/auth/me` — 현재 사용자 조회 (Bearer JWT 필수)
 - `GET /api/v1/entries` — 내역 목록 (인증 필수)
 - `POST /api/v1/entries` — 단건 등록 (201, 인증 필수)

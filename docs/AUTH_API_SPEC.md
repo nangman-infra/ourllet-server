@@ -1,139 +1,144 @@
 # 백엔드 인증 API 사양 (Google OAuth + JWT)
 
-가계부 앱의 **회원가입/로그인** 및 **인증 유지**를 위해 백엔드에서 구현할 API와 동작을 정리한 문서입니다. 프론트는 이미 Google OAuth로 ID 토큰을 받아 이 API를 호출하고, 발급받은 JWT를 로컬스토리지에 저장해 사용합니다.
+가계부 앱의 **회원가입/로그인** 및 **인증 유지**를 위한 백엔드 API 사양입니다.
+
+**원하는 인증 흐름**: 프론트가 백엔드로 인증을 요청 → 백엔드가 Google OAuth로 사용자를 보냄 → Google이 **백엔드**로 콜백 → 백엔드가 사용자 생성/조회 후 JWT 발급 → 백엔드가 **프론트**로 토큰을 넘겨 응답.
 
 ---
 
 ## 1. 목표
 
-- **Google 계정으로만** 가입/로그인 (이메일·이름 등은 Google에서 제공)
-- Google에서 받은 **ID 토큰(id_token)** 을 백엔드에서 검증 후, 우리 서비스용 **JWT** 발급
-- 발급한 JWT로 사용자 구분 (가계부 초대 등 추후 기능에서 사용)
-- 기존 내역 API(`/v1/entries`) 등은 **JWT 필수**로 전환해, 로그인한 사용자만 접근 가능하게 함
+- **Google 계정으로만** 가입/로그인
+- **OAuth 콜백은 백엔드**가 받음 (구글이 백엔드 URL로 리다이렉트)
+- 백엔드가 우리 서비스용 **JWT** 발급 후, **프론트 로그인 페이지**로 리다이렉트해 토큰 전달 (`/login#token=...`)
+- (선택) 클라이언트에서 idToken을 직접 보내는 **POST /v1/auth/google** 도 지원 가능
+- 기존 내역 API는 **JWT 필수**, 미인증 시 401
 
 ---
 
-## 2. 프론트엔드 동작 요약 (참고)
+## 2. 전체 흐름 (리다이렉트 방식, 메인)
 
-- **진입 시**: 로컬스토리지에 토큰이 없으면 `/login`으로 이동, Google 로그인 버튼 표시
-- **Google 로그인 성공 시**: Google이 준 **ID 토큰(credential)** 을 `POST /v1/auth/google` body에 `{ idToken: string }` 으로 전송
-- **백엔드 응답**: `{ token: string, user: { id, email, name?, picture? } }` → 프론트는 `token`을 로컬스토리지에 저장하고, 이후 모든 API 요청에 `Authorization: Bearer <token>` 헤더로 포함
-- **앱 재실행 시**: 로컬스토리지의 토큰으로 `GET /v1/auth/me` 호출해 현재 사용자 정보 조회 및 로그인 상태 유지
+1. **프론트**: 사용자가 "Google로 로그인" 클릭 → 브라우저가 **백엔드** `GET /api/v1/auth/google` 로 이동
+2. **백엔드**: Google OAuth 인증 URL로 **리다이렉트** (client_id, redirect_uri=**백엔드 콜백 URL**, scope, state 등)
+3. **Google**: 사용자 로그인/동의 후 **백엔드 콜백 URL**로 리다이렉트 (`?code=...&state=...`)
+4. **백엔드**: `GET /api/v1/auth/callback/google` 에서 code·state 수신 → code로 id_token 교환 → id_token 검증 → 사용자 생성/조회 → JWT 발급 → **프론트** `{FRONTEND_APP_URL}/login#token={JWT}` 로 리다이렉트
+5. **프론트**: `/login` 페이지에서 hash의 `token`을 읽어 로컬스토리지에 저장 후 홈으로 이동
 
 ---
 
-## 3. 구현할 API
+## 3. 구현된 API
 
-### 3.1 Google 로그인 (가입 또는 로그인)
+### 3.1 OAuth 진입 (Google 로그인 시작)
 
-**요청**
-
-- **Method**: `POST`
-- **Path**: `/v1/auth/google` (또는 `/api/v1/auth/google` — 기존 API prefix에 맞춤)
-- **Headers**: `Content-Type: application/json`
-- **Body**:
-  ```json
-  { "idToken": "<Google에서 받은 JWT id_token>" }
-  ```
+- **Method**: `GET`
+- **Path**: `/api/v1/auth/google`
 
 **동작**
 
-1. `idToken`을 **Google 공개키로 검증** (예: Google OAuth2 라이브러리 또는 JWKS 사용).
-2. 검증 성공 시 payload에서 **고유 식별자(sub)** 와 필요 시 **email, name, picture** 추출.
-3. **DB에서 해당 Google sub로 사용자 조회**
-   - 있으면: 해당 사용자로 로그인 처리.
-   - 없으면: 사용자 레코드 생성 후 로그인 처리 (회원가입 겸 로그인).
-4. 우리 서비스용 **JWT** 발급 (payload 예: `{ sub: userId, ... }`, 만료 시간 설정).
-5. **응답**:
-   - **Status**: `200`
-   - **Body**:
-     ```json
-     {
-       "token": "<발급한 JWT>",
-       "user": {
-         "id": "<우리 DB 사용자 id>",
-         "email": "<이메일>",
-         "name": "<이름, 선택>",
-         "picture": "<프로필 이미지 URL, 선택>"
-       }
-     }
-     ```
-
-**에러**
-
-- `idToken` 누락/형식 오류: `400`
-- Google 검증 실패(만료, 서명 오류 등): `401`
-- 기타 서버 에러: `5xx`
+1. CSRF용 **state** 생성 후 쿠키에 저장
+2. **redirect_uri** = 백엔드 자신의 콜백 URL (예: `https://api.junoshon.cloud/api/v1/auth/callback/google`)
+3. Google OAuth 인증 URL로 **302 리다이렉트**  
+   - `https://accounts.google.com/o/oauth2/v2/auth`  
+   - 쿼리: `client_id`, `redirect_uri`, `response_type=code`, `scope=openid email profile`, `state`, `access_type=offline`, `prompt=consent`
 
 ---
 
-### 3.2 현재 사용자 조회 (토큰 검증)
-
-**요청**
+### 3.2 OAuth 콜백 (Google → 백엔드, 이후 프론트로 전달)
 
 - **Method**: `GET`
-- **Path**: `/v1/auth/me`
+- **Path**: `/api/v1/auth/callback/google`
+- **Query**: Google이 전달하는 `code`, `state`, (실패 시) `error` 등
+
+**동작**
+
+1. **state** 검증 (쿠키와 비교). 불일치 시 프론트 로그인 페이지로 `?error=invalid_state` 리다이렉트
+2. **code**로 Google token endpoint에 요청 → **id_token** 수신
+3. **id_token**을 Google 공개키로 검증
+4. payload에서 **sub**, **email**, **name**, **picture** 추출
+5. DB에서 **google_sub**로 사용자 조회 → 없으면 생성 (회원가입 겸 로그인)
+6. 우리 서비스용 **JWT** 발급
+7. **프론트 로그인 페이지**로 리다이렉트:  
+   `{FRONTEND_APP_URL}/login#token={JWT}`  
+   실패 시: `{FRONTEND_APP_URL}/login?error=...` (예: `backend_auth`, `invalid_state`, `no_code`)
+
+**환경 변수**
+
+- **FRONTEND_APP_URL**: 프론트 앱 기준 URL (예: `https://ourllet.junoshon.cloud`, 로컬 `http://localhost:3000`). 리다이렉트 대상으로 사용.
+- **BACKEND_APP_URL**: 백엔드 기준 URL (예: `https://api.junoshon.cloud`). redirect_uri 생성에 사용.
+
+---
+
+### 3.3 Google 로그인 (idToken 직접 전달, 선택)
+
+- **Method**: `POST`
+- **Path**: `/api/v1/auth/google`
+- **Headers**: `Content-Type: application/json`
+- **Body**: `{ "idToken": "<Google에서 받은 JWT id_token>" }`
+
+**동작**
+
+1. **idToken**을 Google 공개키로 검증
+2. 검증 성공 시 payload에서 **sub**, **email**, **name**, **picture** 추출
+3. DB에서 해당 **google_sub**로 사용자 조회 → 없으면 생성
+4. 우리 서비스용 **JWT** 발급
+5. **응답**: Status `200`, Body `{ "token": "<JWT>", "user": { "id", "email", "name?", "picture?" } }`
+
+(프론트에서 Google One Tap/팝업으로 idToken을 받아 이 엔드포인트를 호출하는 경우에 사용.)
+
+---
+
+### 3.4 현재 사용자 조회 (토큰 검증)
+
+- **Method**: `GET`
+- **Path**: `/api/v1/auth/me`
 - **Headers**: `Authorization: Bearer <우리가 발급한 JWT>`
 
 **동작**
 
-1. `Authorization` 헤더에서 JWT 추출 후 **서명·만료 검증**.
-2. 유효하면 payload의 사용자 id로 **DB에서 사용자 조회**.
-3. **응답**:
-   - **Status**: `200`
-   - **Body**:
-     ```json
-     {
-       "id": "<사용자 id>",
-       "email": "<이메일>",
-       "name": "<이름, 선택>",
-       "picture": "<프로필 이미지 URL, 선택>"
-     }
-     ```
+1. JWT 추출 후 **서명·만료 검증**
+2. 유효하면 payload의 사용자 id로 **DB에서 사용자 조회**
+3. **응답**: Status `200`, Body `{ "id", "email", "name?", "picture?" }`
 
-**에러**
-
-- 토큰 없음/만료/위조: `401`
-- 사용자 없음: `401` 또는 `404`
+**에러**: 토큰 없음/만료/위조 → `401`
 
 ---
 
 ## 4. 기존 API 보호 (인증 필수)
 
-- **대상**: 내역 CRUD 등 인증이 필요한 API (예: `GET/POST/PUT/DELETE /v1/entries`, `/v1/entries/:id` 등).
-- **방식**:  
-  - 모든 요청에서 `Authorization: Bearer <JWT>` 를 확인.  
-  - JWT가 없거나 유효하지 않으면 `401` 반환.  
-  - 유효하면 payload에서 **userId**를 꺼내서, 해당 사용자의 데이터만 조회/수정/삭제하도록 처리.
-
-(추후 "가계부 초대" 기능에서는 가계부 단위로 멤버/권한을 두고, `userId`와 가계부 id를 함께 사용하면 됨.)
+- 내역 CRUD 등: `Authorization: Bearer <JWT>` 확인, 없거나 유효하지 않으면 `401`
+- 유효하면 payload에서 **userId**를 꺼내 해당 사용자 데이터만 조회/수정/삭제
 
 ---
 
-## 5. 사용자 모델 제안
+## 5. 사용자 모델
 
-- **식별**: Google `sub` 값을 **유일 키**로 저장 (또는 우리 자체 `id`를 PK로 두고 `google_sub`를 유일 인덱스).
-- **저장 필드 예**:  
-  `id`, `google_sub`, `email`, `name`, `picture`, `created_at`, `updated_at`  
-  (이메일/이름/사진은 Google payload에서 선택적으로 저장.)
+- **google_sub** 를 유일 키로 저장 (자체 `id` PK + `google_sub` 유일)
+- 필드: `id`, `google_sub`, `email`, `name`, `picture`, `created_at`, `updated_at`
 
 ---
 
-## 6. 환경/설정
+## 6. 환경/설정 (백엔드)
 
-- **Google OAuth**:  
-  - 백엔드에서 ID 토큰 검증 시 사용하는 **Google Client ID** (프론트와 동일한 것 사용 가능).  
-  - 필요 시 서비스 계정 또는 OAuth 클라이언트 설정.
-- **JWT**:  
-  - 서명용 **비밀키(또는 키 페어)** 와 **만료 시간** (예: 7일, 30일) 설정.
+- **Google OAuth**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (콜백에서 code 교환 시 필요)
+- **BACKEND_APP_URL**: OAuth redirect_uri 기준 (예: `https://api.junoshon.cloud`)
+- **FRONTEND_APP_URL**: OAuth 성공/실패 후 리다이렉트할 프론트 앱 URL
+- **JWT**: `JWT_SECRET`, `JWT_EXPIRES_IN`
+
+**Google Cloud Console**
+
+- OAuth 클라이언트의 **승인된 리디렉션 URI**에 **백엔드 콜백 URL** 등록  
+  예: `https://api.junoshon.cloud/api/v1/auth/callback/google`  
+  (로컬: `http://localhost:3001/api/v1/auth/callback/google`)
 
 ---
 
-## 7. 체크리스트 (구현 완료 시 확인)
+## 7. 체크리스트 (구현 완료 시)
 
-- [x] `POST /v1/auth/google` — body `idToken` 검증, 사용자 생성/조회, JWT 발급, `{ token, user }` 반환
-- [x] `GET /v1/auth/me` — `Authorization: Bearer` JWT 검증, 현재 사용자 정보 반환
+- [x] `GET /api/v1/auth/google` — Google OAuth URL로 리다이렉트 (redirect_uri = 백엔드 콜백 URL, state 쿠키)
+- [x] `GET /api/v1/auth/callback/google` — code·state 수신, code→id_token 교환, 사용자 생성/조회, JWT 발급, **프론트** `{FRONTEND_APP_URL}/login#token=...` 로 리다이렉트
+- [x] (선택) `POST /api/v1/auth/google` — body `idToken` 검증, 사용자 생성/조회, JWT 발급, `{ token, user }` 반환
+- [x] `GET /api/v1/auth/me` — Bearer JWT 검증, 현재 사용자 정보 반환
 - [x] 기존 내역 API에 JWT 필수 적용, 401 미인증 처리
-- [x] 사용자 테이블(또는 스키마)에 `google_sub` 기준 생성/조회
+- [x] 사용자 테이블에 `google_sub` 기준 생성/조회
 
-이 사양대로 구현하면 프론트의 "Google 로그인 → 로컬스토리지 저장 → 재진입 시 로그인 유지" 흐름과 그대로 연동됩니다.
+이 사양대로 구현하면 "프론트 → 백엔드 인증 요청 → 백엔드가 구글 OAuth → 구글이 백엔드로 콜백 → 백엔드가 프론트에 토큰 전달" 구조가 됩니다.

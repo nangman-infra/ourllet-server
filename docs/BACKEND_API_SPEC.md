@@ -11,8 +11,14 @@
 
 ## 인증 API
 
+### GET /api/v1/auth/google
+**설명:** Google OAuth 진입. state 쿠키 설정 후 Google 인증 URL로 302 리다이렉트. (리다이렉트 방식 메인)
+
+### GET /api/v1/auth/callback/google
+**설명:** Google OAuth 콜백. code·state 검증 후 JWT 발급, `{FRONTEND_APP_URL}/login#token={JWT}` 로 리다이렉트. (직접 호출 불필요)
+
 ### POST /api/v1/auth/google
-**설명:** Google ID 토큰으로 로그인(또는 가입) 후 우리 서비스 JWT 발급.
+**설명:** Google ID 토큰으로 로그인(또는 가입) 후 우리 서비스 JWT 발급. (선택, idToken 직접 전달 시)
 
 **Request Body:** `{ "idToken": "<Google ID token>" }`
 
