@@ -4,6 +4,33 @@
 - 베이스 URL: `/api`
 - 에러 응답 형식: `{ "error": "메시지" }` (JSON)
 - CORS: 프론트엔드 오리진 허용
+- **인증**: `/api/v1/entries`, `/api/v1/summary` 는 `Authorization: Bearer <JWT>` 필수. 미인증 시 `401`
+
+---
+
+## 인증 API
+
+### POST /api/v1/auth/google
+**설명:** Google ID 토큰으로 로그인(또는 가입) 후 우리 서비스 JWT 발급.
+
+**Request Body:** `{ "idToken": "<Google ID token>" }`
+
+**성공 (200 OK):**
+```json
+{
+  "token": "<JWT>",
+  "user": { "id": "<uuid>", "email": "...", "name": "...", "picture": "..." }
+}
+```
+**에러:** 400 (idToken 누락/형식 오류), 401 (Google 검증 실패)
+
+### GET /api/v1/auth/me
+**설명:** 발급한 JWT로 현재 사용자 조회.
+
+**Headers:** `Authorization: Bearer <JWT>`
+
+**성공 (200 OK):** `{ "id", "email", "name?", "picture?" }`  
+**에러:** 401 (토큰 없음/만료/위조)
 
 ---
 
@@ -23,16 +50,17 @@
 
 ## 2. GET /api/v1/entries
 
-**설명:** 가계부 내역 목록. `date` 내림차순 정렬.
+**설명:** 가계부 내역 목록. `date` 내림차순 정렬. **인증 필수** (`Authorization: Bearer <JWT>`).
 
 **응답 (200 OK)**  
-`LedgerEntry[]`
+`LedgerEntry[]`  
+**에러:** 401 (미인증)
 
 ---
 
 ## 3. POST /api/v1/entries
 
-**설명:** 단건 내역 등록.
+**설명:** 단건 내역 등록. **인증 필수**.
 
 **Request Body**
 | 필드   | 타입   | 필수 | 설명 |

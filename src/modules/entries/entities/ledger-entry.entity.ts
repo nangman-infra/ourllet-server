@@ -14,6 +14,9 @@ export class LedgerEntry {
   @PrimaryColumn('uuid')
   id: string;
 
+  @Column({ type: 'uuid' })
+  userId: string;
+
   @Column({ type: 'varchar', length: 10 })
   type: LedgerEntryType;
 

@@ -11,19 +11,21 @@ export class EntriesRepository {
     private readonly repo: Repository<LedgerEntry>,
   ) {}
 
-  async findAllOrderByDateDesc(): Promise<LedgerEntry[]> {
+  async findAllOrderByDateDesc(userId: string): Promise<LedgerEntry[]> {
     return this.repo.find({
+      where: { userId },
       order: { date: 'DESC', createdAt: 'DESC' },
     });
   }
 
-  async findById(id: string): Promise<LedgerEntry | null> {
-    return this.repo.findOne({ where: { id } });
+  async findById(id: string, userId: string): Promise<LedgerEntry | null> {
+    return this.repo.findOne({ where: { id, userId } });
   }
 
-  async create(dto: CreateEntryDto, id: string): Promise<LedgerEntry> {
+  async create(dto: CreateEntryDto, id: string, userId: string): Promise<LedgerEntry> {
     const entity = this.repo.create({
       id,
+      userId,
       type: dto.type,
       amount: dto.amount,
       title: dto.title,
@@ -33,30 +35,32 @@ export class EntriesRepository {
     return this.repo.save(entity);
   }
 
-  async update(id: string, dto: CreateEntryDto): Promise<LedgerEntry> {
-    await this.repo.update(id, {
+  async update(id: string, dto: CreateEntryDto, userId: string): Promise<LedgerEntry> {
+    await this.repo.update({ id, userId }, {
       type: dto.type,
       amount: dto.amount,
       title: dto.title,
       memo: dto.memo ?? null,
       date: dto.date,
     });
-    const updated = await this.findById(id);
+    const updated = await this.findById(id, userId);
     if (!updated) throw new Error('Entry not found after update');
     return updated;
   }
 
-  async remove(id: string): Promise<void> {
-    await this.repo.delete(id);
+  async remove(id: string, userId: string): Promise<void> {
+    await this.repo.delete({ id, userId });
   }
 
   async createMany(
     dtos: CreateEntryDto[],
     ids: string[],
+    userId: string,
   ): Promise<LedgerEntry[]> {
     const entities = dtos.map((dto, i) =>
       this.repo.create({
         id: ids[i],
+        userId,
         type: dto.type,
         amount: dto.amount,
         title: dto.title,
@@ -69,6 +73,7 @@ export class EntriesRepository {
 
   async getSummaryByPeriod(
     period: string,
+    userId: string,
   ): Promise<{ totalIncome: number; totalExpense: number }> {
     const [start, end] = [
       `${period}-01`,
@@ -85,7 +90,8 @@ export class EntriesRepository {
       .createQueryBuilder('e')
       .select('e.type', 'type')
       .addSelect('SUM(e.amount)', 'sum')
-      .where('e.date >= :start', { start })
+      .where('e.userId = :userId', { userId })
+      .andWhere('e.date >= :start', { start })
       .andWhere('e.date <= :end', { end })
       .groupBy('e.type')
       .getRawMany<{ type: string; sum: string }>();

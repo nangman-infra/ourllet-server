@@ -3,9 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_FILTER } from '@nestjs/core';
 import { HealthModule } from './modules/health/health.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { EntriesModule } from './modules/entries/entries.module';
 import { SummaryModule } from './modules/summary/summary.module';
 import { LedgerEntry } from './modules/entries/entities/ledger-entry.entity';
+import { User } from './modules/auth/entities/user.entity';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 @Module({
@@ -18,12 +20,13 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
       username: process.env.DATABASE_USER ?? 'postgres',
       password: process.env.DATABASE_PASSWORD ?? 'postgres',
       database: process.env.DATABASE_NAME ?? 'ourllet',
-      entities: [LedgerEntry],
+      entities: [LedgerEntry, User],
       synchronize: process.env.NODE_ENV !== 'production',
       retryAttempts: 3,
       retryDelay: 2000,
     }),
     HealthModule,
+    AuthModule,
     EntriesModule,
     SummaryModule,
   ],
