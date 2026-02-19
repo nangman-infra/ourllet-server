@@ -86,6 +86,7 @@ export class AuthController {
     }
   }
 
+  /** idToken 직접 전달 (POST) — One Tap/팝업 로그인 시 사용. GET(리다이렉트)와 별도 라우트 */
   @Post('google')
   async googleLogin(@Body() dto: GoogleLoginDto): Promise<{
     token: string;
