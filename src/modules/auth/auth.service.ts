@@ -13,6 +13,9 @@ export interface JwtPayload {
   email?: string;
 }
 
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const OAUTH_SCOPES = ['openid', 'email', 'profile'];
+
 @Injectable()
 export class AuthService {
   private readonly googleClient: OAuth2Client;
@@ -23,7 +26,32 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {
     const clientId = process.env.GOOGLE_CLIENT_ID ?? '';
-    this.googleClient = new OAuth2Client(clientId);
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET ?? '';
+    this.googleClient = new OAuth2Client(clientId, clientSecret);
+  }
+
+  /** OAuth 진입: state 생성 후 사용할 Google 인증 URL 반환 */
+  getGoogleAuthUrl(redirectUri: string, state: string): string {
+    const params = new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID ?? '',
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: OAUTH_SCOPES.join(' '),
+      state,
+      access_type: 'offline',
+      prompt: 'consent',
+    });
+    return `${GOOGLE_AUTH_URL}?${params.toString()}`;
+  }
+
+  /** authorization code로 id_token 교환 */
+  async exchangeCodeForIdToken(code: string, redirectUri: string): Promise<string> {
+    const { tokens } = await this.googleClient.getToken({ code, redirect_uri: redirectUri });
+    const idToken = tokens.id_token;
+    if (!idToken) {
+      throw new UnauthorizedException('Google에서 토큰을 받지 못했어요.');
+    }
+    return idToken;
   }
 
   async verifyGoogleIdToken(idToken: string): Promise<{
