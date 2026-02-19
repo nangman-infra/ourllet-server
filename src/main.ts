@@ -16,7 +16,8 @@ async function bootstrap() {
   );
   const corsOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-    : ['https://ourllet.junoshon.cloud', 'http://localhost:3000'];
+    // : ['https://ourllet.junoshon.cloud', 'http://localhost:3000'];
+    : ['*'];
 
   const allowedOrigins = new Set(corsOrigins.length > 0 ? corsOrigins : ['https://ourllet.junoshon.cloud', 'http://localhost:3000']);
 
