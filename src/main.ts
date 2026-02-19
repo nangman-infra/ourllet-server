@@ -1,21 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. CORS 설정 (반드시 다른 미들웨어보다 상단에 위치하는 것이 좋습니다)
+  app.use(cookieParser());
   app.enableCors({
     origin: [
-      'https://ourllet.junoshon.cloud', // 운영 환경
-      'http://localhost:3000',          // 로컬 개발 환경 (React/Next.js 등)
+      'https://ourllet.junoshon.cloud',
+      'http://localhost:3000',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true, // 쿠키나 인증 헤더를 사용하는 경우 필수
+    credentials: true,
   });
-
-  // 2. Global Prefix 설정
   app.setGlobalPrefix('api');
 
   // 3. Validation Pipe 설정
