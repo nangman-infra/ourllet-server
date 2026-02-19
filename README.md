@@ -58,4 +58,22 @@ pnpm run build && pnpm run start:prod
 
 ## CORS
 
-프론트엔드 오리진 허용(`origin: true`)으로 설정되어 있습니다.
+- 기본 허용 오리진: `https://ourllet.junoshon.cloud`, `http://localhost:3000`
+- `CORS_ORIGIN` 환경 변수로 쉼표 구분 추가 가능.
+
+**리버스 프록시(nginx, Caddy 등) 뒤에서 CORS 에러가 나면:**
+
+1. **OPTIONS 요청이 백엔드까지 전달되는지** 확인하세요. 프록시가 OPTIONS를 막거나 별도 처리하면 브라우저 preflight가 실패합니다.
+2. **프록시에서 CORS 헤더를 덮어쓰지 않도록** 하세요. 백엔드(3001)로 프록시만 하고, CORS 헤더는 Nest에서 내려보내게 두는 것이 좋습니다.
+3. nginx 예시 (API로만 전달):
+   ```nginx
+   location /api/ {
+     proxy_pass http://127.0.0.1:3001;
+     proxy_http_version 1.1;
+     proxy_set_header Host $host;
+     proxy_set_header X-Real-IP $remote_addr;
+     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+     proxy_set_header X-Forwarded-Proto $scheme;
+   }
+   ```
+4. 배포 후 반드시 **백엔드 컨테이너를 재시작**해 새 CORS 설정이 적용되도록 하세요: `docker compose up -d --build backend`
