@@ -21,8 +21,10 @@ npm install
 npm run build
 
 # 프로세스 재시작 (방식에 따라 하나만)
-# Docker 사용 시
-docker compose up -d --build backend
+# Docker 사용 시 (build만 하면 컨테이너는 안 올라감 → 반드시 up -d)
+docker compose up -d --build
+# 백엔드만 다시 빌드·재기동할 때:
+# docker compose up -d --build backend
 
 # 또는 PM2 사용 시
 pm2 restart ourllet-api
@@ -31,6 +33,8 @@ pm2 restart ourllet-api
 # 기존 프로세스 종료 후
 npm run start:prod
 ```
+
+- 컨테이너에는 `restart: unless-stopped` 가 걸려 있어서, 서버 재부팅 후에도 자동으로 postgres·backend 가 올라옵니다.
 
 ## 2. 동작 확인
 

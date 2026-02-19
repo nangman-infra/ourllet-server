@@ -21,7 +21,8 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
       password: process.env.DATABASE_PASSWORD ?? 'postgres',
       database: process.env.DATABASE_NAME ?? 'ourllet',
       entities: [LedgerEntry, User],
-      synchronize: process.env.NODE_ENV !== 'production',
+      // 앱 기동 시 users, ledger_entries 테이블 자동 생성. 마이그레이션 도입 전까지 사용.
+      synchronize: true,
       retryAttempts: 3,
       retryDelay: 2000,
     }),
