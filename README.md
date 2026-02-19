@@ -39,16 +39,21 @@ pnpm run build && pnpm run start:prod
 | DATABASE_USER | DB 사용자 | postgres |
 | DATABASE_PASSWORD | DB 비밀번호 | postgres |
 | DATABASE_NAME | DB 이름 | ourllet |
+| GOOGLE_CLIENT_ID | Google OAuth Client ID (ID 토큰 검증) | — |
+| JWT_SECRET | 우리 서비스 JWT 서명 비밀키 | — |
+| JWT_EXPIRES_IN | JWT 만료 (예: 7d) | 7d |
 
 ## API 개요
 
-- `GET /api/health` — 상태 확인
-- `GET /api/v1/entries` — 내역 목록 (date 내림차순)
-- `POST /api/v1/entries` — 단건 등록 (201)
-- `PUT /api/v1/entries/:id` — 내역 수정
-- `DELETE /api/v1/entries/:id` — 내역 삭제 (204)
-- `POST /api/v1/entries/import` — 벌크 등록
-- `GET /api/v1/summary?period=YYYY-MM` — 월별 집계
+- `GET /api/health` — 상태 확인 (인증 불필요)
+- `POST /api/v1/auth/google` — Google 로그인, JWT 발급 (body: `{ idToken }`)
+- `GET /api/v1/auth/me` — 현재 사용자 조회 (Bearer JWT 필수)
+- `GET /api/v1/entries` — 내역 목록 (인증 필수)
+- `POST /api/v1/entries` — 단건 등록 (201, 인증 필수)
+- `PUT /api/v1/entries/:id` — 내역 수정 (인증 필수)
+- `DELETE /api/v1/entries/:id` — 내역 삭제 (204, 인증 필수)
+- `POST /api/v1/entries/import` — 벌크 등록 (인증 필수)
+- `GET /api/v1/summary?period=YYYY-MM` — 월별 집계 (인증 필수)
 
 상세 명세는 `docs/BACKEND_API_SPEC.md`를 참고하세요.
 
