@@ -20,6 +20,6 @@ export class SummaryController {
     balance: number;
     period: string;
   }> {
-    return this.summaryService.getSummaryByPeriod(query.period, user.id);
+    return this.summaryService.getSummaryByPeriod(query.period, user.id, query.ledgerId);
   }
 }

@@ -7,7 +7,7 @@ const PERIOD_PATTERN = /^\d{4}-\d{2}$/;
 export class SummaryService {
   constructor(private readonly entriesService: EntriesService) {}
 
-  async getSummaryByPeriod(period: string, userId: string): Promise<{
+  async getSummaryByPeriod(period: string, userId: string, ledgerId: string): Promise<{
     totalIncome: number;
     totalExpense: number;
     balance: number;
@@ -16,6 +16,6 @@ export class SummaryService {
     if (!period || !PERIOD_PATTERN.test(period)) {
       throw new BadRequestException('period는 YYYY-MM 형식이어야 해요.');
     }
-    return this.entriesService.getSummaryByPeriod(period, userId);
+    return this.entriesService.getSummaryByPeriod(period, userId, ledgerId);
   }
 }

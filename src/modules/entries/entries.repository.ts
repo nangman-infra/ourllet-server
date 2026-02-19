@@ -11,20 +11,25 @@ export class EntriesRepository {
     private readonly repo: Repository<LedgerEntry>,
   ) {}
 
-  async findAllOrderByDateDesc(userId: string): Promise<LedgerEntry[]> {
+  async findAllOrderByDateDesc(ledgerId: string): Promise<LedgerEntry[]> {
     return this.repo.find({
-      where: { userId },
+      where: { ledgerId },
       order: { date: 'DESC', createdAt: 'DESC' },
     });
   }
 
-  async findById(id: string, userId: string): Promise<LedgerEntry | null> {
-    return this.repo.findOne({ where: { id, userId } });
+  async findById(id: string, ledgerId: string): Promise<LedgerEntry | null> {
+    return this.repo.findOne({ where: { id, ledgerId } });
+  }
+
+  async findByIdOnly(id: string): Promise<LedgerEntry | null> {
+    return this.repo.findOne({ where: { id } });
   }
 
   async create(dto: CreateEntryDto, id: string, userId: string): Promise<LedgerEntry> {
     const entity = this.repo.create({
       id,
+      ledgerId: dto.ledgerId,
       userId,
       type: dto.type,
       amount: dto.amount,
@@ -35,21 +40,21 @@ export class EntriesRepository {
     return this.repo.save(entity);
   }
 
-  async update(id: string, dto: CreateEntryDto, userId: string): Promise<LedgerEntry> {
-    await this.repo.update({ id, userId }, {
+  async update(id: string, dto: CreateEntryDto, ledgerId: string, userId: string): Promise<LedgerEntry> {
+    await this.repo.update({ id, ledgerId }, {
       type: dto.type,
       amount: dto.amount,
       title: dto.title,
       memo: dto.memo ?? null,
       date: dto.date,
     });
-    const updated = await this.findById(id, userId);
+    const updated = await this.findById(id, ledgerId);
     if (!updated) throw new Error('Entry not found after update');
     return updated;
   }
 
-  async remove(id: string, userId: string): Promise<void> {
-    await this.repo.delete({ id, userId });
+  async remove(id: string, ledgerId: string): Promise<void> {
+    await this.repo.delete({ id, ledgerId });
   }
 
   async createMany(
@@ -60,6 +65,7 @@ export class EntriesRepository {
     const entities = dtos.map((dto, i) =>
       this.repo.create({
         id: ids[i],
+        ledgerId: dto.ledgerId,
         userId,
         type: dto.type,
         amount: dto.amount,
@@ -73,7 +79,7 @@ export class EntriesRepository {
 
   async getSummaryByPeriod(
     period: string,
-    userId: string,
+    ledgerId: string,
   ): Promise<{ totalIncome: number; totalExpense: number }> {
     const [start, end] = [
       `${period}-01`,
@@ -90,7 +96,7 @@ export class EntriesRepository {
       .createQueryBuilder('e')
       .select('e.type', 'type')
       .addSelect('SUM(e.amount)', 'sum')
-      .where('e.userId = :userId', { userId })
+      .where('e.ledgerId = :ledgerId', { ledgerId })
       .andWhere('e.date >= :start', { start })
       .andWhere('e.date <= :end', { end })
       .groupBy('e.type')

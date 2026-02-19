@@ -5,9 +5,14 @@ import { EntriesRepository } from './entries.repository';
 import { EntriesService } from './entries.service';
 import { EntriesController } from './entries.controller';
 import { AuthModule } from '../auth/auth.module';
+import { LedgerModule } from '../ledger/ledger.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([LedgerEntry]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([LedgerEntry]),
+    AuthModule,
+    LedgerModule,
+  ],
   controllers: [EntriesController],
   providers: [EntriesRepository, EntriesService],
   exports: [EntriesService, EntriesRepository],
