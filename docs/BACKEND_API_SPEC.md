@@ -5,6 +5,7 @@
 - 에러 응답 형식: `{ "error": "메시지" }` (JSON)
 - CORS: 프론트엔드 오리진 허용
 - **인증**: `/api/v1/entries`, `/api/v1/summary` 는 `Authorization: Bearer <JWT>` 필수. 미인증 시 `401`
+- 인증 API 상세(목표, 프론트 동작, 사용자 모델, 체크리스트): [AUTH_API_SPEC.md](./AUTH_API_SPEC.md)
 
 ---
 
