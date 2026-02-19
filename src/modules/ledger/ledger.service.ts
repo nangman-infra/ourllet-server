@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ledger } from './entities/ledger.entity';
 import { LedgerMember } from './entities/ledger-member.entity';
+import { LedgerEntry } from '../entries/entities/ledger-entry.entity';
 import { getNotFoundMessage } from '../../common/filters/http-exception.filter';
 
 const INVITE_CODE_LENGTH = 6;
@@ -29,6 +30,8 @@ export class LedgerService {
     private readonly ledgerRepo: Repository<Ledger>,
     @InjectRepository(LedgerMember)
     private readonly memberRepo: Repository<LedgerMember>,
+    @InjectRepository(LedgerEntry)
+    private readonly entryRepo: Repository<LedgerEntry>,
   ) {}
 
   /** 6자리 초대코드 생성(유일할 때까지 재시도) */
@@ -106,5 +109,19 @@ export class LedgerService {
     if (!ok) {
       throw new NotFoundException(getNotFoundMessage());
     }
+  }
+
+  /** 가계부 삭제. 멤버만 가능. 해당 가계부 내역·멤버·가계부 순으로 삭제 */
+  async deleteLedger(userId: string, code: string): Promise<void> {
+    const normalized = code.replace(/\s/g, '').slice(0, INVITE_CODE_LENGTH);
+    if (normalized.length !== INVITE_CODE_LENGTH || !/^\d+$/.test(normalized)) {
+      throw new BadRequestException('가계부 코드는 6자리 숫자예요.');
+    }
+
+    await this.ensureMember(userId, normalized);
+
+    await this.entryRepo.delete({ ledgerId: normalized });
+    await this.memberRepo.delete({ ledgerId: normalized });
+    await this.ledgerRepo.delete({ id: normalized });
   }
 }
