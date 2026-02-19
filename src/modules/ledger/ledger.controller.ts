@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
 import { LedgerService } from './ledger.service';
 import { JoinLedgerDto } from './dto/join-ledger.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -32,5 +42,15 @@ export class LedgerController {
   async list(@CurrentUser() user: User): Promise<{ ledgerIds: string[] }> {
     const ledgerIds = await this.ledgerService.getMyLedgerIds(user.id);
     return { ledgerIds };
+  }
+
+  /** 가계부 삭제. 설정 탭에서 가계부 코드(6자리)로 삭제. 멤버만 가능. */
+  @Delete(':ledgerId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async delete(
+    @Param('ledgerId') ledgerId: string,
+    @CurrentUser() user: User,
+  ): Promise<void> {
+    await this.ledgerService.deleteLedger(user.id, ledgerId);
   }
 }
