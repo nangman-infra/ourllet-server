@@ -7,17 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(cookieParser());
-  app.enableCors({
-    origin: [
-      'https://ourllet.junoshon.cloud',
-      'http://localhost:3000',
-    ],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
   app.setGlobalPrefix('api');
-
-  // 3. Validation Pipe 설정
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -26,10 +16,29 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+  const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+    : ['https://ourllet.junoshon.cloud', 'http://localhost:3000'];
+
+  const allowedOrigins = new Set(corsOrigins.length > 0 ? corsOrigins : ['https://ourllet.junoshon.cloud', 'http://localhost:3000']);
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
 
   const port = process.env.PORT ?? 3001;
   await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}/api`);
 }
 
 bootstrap();

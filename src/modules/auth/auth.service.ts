@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,6 +18,7 @@ const OAUTH_SCOPES = ['openid', 'email', 'profile'];
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly googleClient: OAuth2Client;
 
   constructor(
@@ -75,7 +76,8 @@ export class AuthService {
         name: payload.name ?? undefined,
         picture: payload.picture ?? undefined,
       };
-    } catch {
+    } catch (err) {
+      this.logger.warn('Google id_token 검증 실패', err instanceof Error ? err.message : String(err));
       throw new UnauthorizedException('Google 토큰 검증에 실패했어요.');
     }
   }

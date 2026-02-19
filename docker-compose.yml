@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ourllet
       POSTGRES_PASSWORD: ourllet1234
@@ -17,6 +18,7 @@ services:
 
   backend:
     build: .
+    restart: unless-stopped
     ports:
       - "3001:3001"
     environment:
