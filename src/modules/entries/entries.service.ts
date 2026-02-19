@@ -11,41 +11,42 @@ import { getNotFoundMessage } from '../../common/filters/http-exception.filter';
 export class EntriesService {
   constructor(private readonly repository: EntriesRepository) {}
 
-  async findAll(): Promise<LedgerEntry[]> {
-    return this.repository.findAllOrderByDateDesc();
+  async findAll(userId: string): Promise<LedgerEntry[]> {
+    return this.repository.findAllOrderByDateDesc(userId);
   }
 
-  async findOne(id: string): Promise<LedgerEntry> {
-    const entry = await this.repository.findById(id);
+  async findOne(id: string, userId: string): Promise<LedgerEntry> {
+    const entry = await this.repository.findById(id, userId);
     if (!entry) {
       throw new NotFoundException(getNotFoundMessage());
     }
     return entry;
   }
 
-  async create(dto: CreateEntryDto): Promise<LedgerEntry> {
+  async create(dto: CreateEntryDto, userId: string): Promise<LedgerEntry> {
     const id = uuidv4();
-    return this.repository.create(dto, id);
+    return this.repository.create(dto, id, userId);
   }
 
-  async update(id: string, dto: CreateEntryDto): Promise<LedgerEntry> {
-    const existing = await this.repository.findById(id);
+  async update(id: string, dto: CreateEntryDto, userId: string): Promise<LedgerEntry> {
+    const existing = await this.repository.findById(id, userId);
     if (!existing) {
       throw new NotFoundException(getNotFoundMessage());
     }
-    return this.repository.update(id, dto);
+    return this.repository.update(id, dto, userId);
   }
 
-  async remove(id: string): Promise<void> {
-    const existing = await this.repository.findById(id);
+  async remove(id: string, userId: string): Promise<void> {
+    const existing = await this.repository.findById(id, userId);
     if (!existing) {
       throw new NotFoundException(getNotFoundMessage());
     }
-    await this.repository.remove(id);
+    await this.repository.remove(id, userId);
   }
 
   async importEntries(
     rawEntries: unknown[],
+    userId: string,
   ): Promise<{
     created: number;
     failed: number;
@@ -70,7 +71,7 @@ export class EntriesService {
 
       try {
         const id = uuidv4();
-        const created = await this.repository.create(dto as CreateEntryDto, id);
+        const created = await this.repository.create(dto as CreateEntryDto, id, userId);
         entries.push(created);
       } catch {
         errors.push(`[${i}] 저장 중 오류가 났어요.`);
@@ -85,14 +86,14 @@ export class EntriesService {
     };
   }
 
-  async getSummaryByPeriod(period: string): Promise<{
+  async getSummaryByPeriod(period: string, userId: string): Promise<{
     totalIncome: number;
     totalExpense: number;
     balance: number;
     period: string;
   }> {
     const { totalIncome, totalExpense } =
-      await this.repository.getSummaryByPeriod(period);
+      await this.repository.getSummaryByPeriod(period, userId);
     return {
       totalIncome,
       totalExpense,
