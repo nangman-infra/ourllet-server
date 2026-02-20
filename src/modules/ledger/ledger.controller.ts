@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Delete,
   Body,
   Param,
@@ -11,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { LedgerService } from './ledger.service';
 import { JoinLedgerDto } from './dto/join-ledger.dto';
+import { UpdateLedgerDto } from './dto/update-ledger.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { User } from '../auth/entities/user.entity';
@@ -37,11 +39,25 @@ export class LedgerController {
     return this.ledgerService.joinByCode(user.id, dto.code);
   }
 
-  /** 내가 속한 가계부 목록 (ledgerId 배열) */
+  /** 내가 속한 가계부 목록 (ledgerId + name) */
   @Get()
-  async list(@CurrentUser() user: User): Promise<{ ledgerIds: string[] }> {
-    const ledgerIds = await this.ledgerService.getMyLedgerIds(user.id);
-    return { ledgerIds };
+  async list(
+    @CurrentUser() user: User,
+  ): Promise<{ ledgers: { ledgerId: string; name: string | null }[] }> {
+    const ledgers = await this.ledgerService.getMyLedgers(user.id);
+    return { ledgers };
+  }
+
+  /** 가계부 설정 수정 (이름 등). 가계부 번호로 선택 후 설정. 멤버만 가능. */
+  @Patch(':ledgerId')
+  async update(
+    @Param('ledgerId') ledgerId: string,
+    @Body() dto: UpdateLedgerDto,
+    @CurrentUser() user: User,
+  ): Promise<{ ledgerId: string; name: string | null }> {
+    return this.ledgerService.updateLedger(user.id, ledgerId, {
+      name: dto.name,
+    });
   }
 
   /** 가계부 삭제. 설정 탭에서 가계부 코드(6자리)로 삭제. 멤버만 가능. */
