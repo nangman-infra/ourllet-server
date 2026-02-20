@@ -34,7 +34,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.20",
-    "uuid": "^11.0.3"
+    "uuid": "^11.0.3",
+    "nodemailer": "^6.9.16"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
@@ -45,6 +46,7 @@
     "@types/node": "^22.10.2",
     "@types/supertest": "^6.0.2",
     "@types/cookie-parser": "^1.4.7",
+    "@types/nodemailer": "^6.4.14",
     "@types/passport-jwt": "^4.0.1",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.18.0",

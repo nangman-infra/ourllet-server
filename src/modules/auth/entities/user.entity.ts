@@ -11,10 +11,11 @@ export class User {
   @PrimaryColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
-  googleSub: string;
+  /** Google OAuth 시 sub. 이메일 로그인만 쓰는 사용자는 null */
+  @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
+  googleSub: string | null;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

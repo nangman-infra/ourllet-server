@@ -23,7 +23,7 @@
 
 | 용도 | 메서드 | 경로 | 요약 |
 |------|--------|------|------|
-| 내 가계부 목록 | GET | `/api/v1/ledgers` | 내가 속한 가계부 목록 (ledgerId, name) |
+| 내 가계부 목록 | GET | `/api/v1/ledgers` | 목록 (ledgerId, name). 쿼리 `?name=` 시 이름으로 필터(초대코드 조회) |
 | 초대코드 생성 | POST | `/api/v1/ledgers/invite-code` | 새 가계부 생성 후 6자리 코드 반환 |
 | 가계부 참여 | POST | `/api/v1/ledgers/join` | Body: `{ "code": "123456" }` |
 | 가계부 설정 수정 | PATCH | `/api/v1/ledgers/:ledgerId` | Body: `{ "name": "이름" }` (멤버만) |
@@ -41,6 +41,9 @@
 
 ### 1. GET `/api/v1/ledgers`
 
+- **쿼리 (선택)**  
+  - `name`: 가계부 이름(완전 일치). 넣으면 해당 이름인 가계부만 반환 → **이름으로 초대코드(ledgerId) 조회**할 때 사용.  
+  - 예: `GET /api/v1/ledgers?name=우리집 가계부` → `{ "ledgers": [{ "ledgerId": "123456", "name": "우리집 가계부" }] }` 이면 초대코드는 `123456`.
 - **응답 예시**
   ```json
   {
@@ -53,6 +56,7 @@
 - `name`이 없으면 `null`. 표시 시 `name || ledgerId` (예: "우리집 가계부" 또는 "123456")로 쓰면 됩니다.
 - 앱 진입 시 또는 설정 화면 진입 시 호출해, **현재 사용자가 속한 가계부 목록**을 받습니다.  
   이 목록으로 “현재 선택된 가계부”를 정하고, entries/summary 호출 시 해당 `ledgerId`를 사용합니다.
+- **가계부로 초대하기**: 이름으로 가계부를 선택한 뒤 초대코드를 보여줄 때는 `GET /api/v1/ledgers?name={선택한 이름}` 호출 후 응답의 `ledgers[0].ledgerId`가 초대코드입니다. (같은 이름이 여러 개면 여러 항목이 올 수 있음.)
 
 ### 2. POST `/api/v1/ledgers/invite-code`
 

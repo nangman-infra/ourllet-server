@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -39,12 +40,13 @@ export class LedgerController {
     return this.ledgerService.joinByCode(user.id, dto.code);
   }
 
-  /** 내가 속한 가계부 목록 (ledgerId + name) */
+  /** 내가 속한 가계부 목록 (ledgerId + name). 쿼리 name 있으면 해당 이름과 일치하는 가계부만 (초대코드 조회용) */
   @Get()
   async list(
+    @Query('name') name: string | undefined,
     @CurrentUser() user: User,
   ): Promise<{ ledgers: { ledgerId: string; name: string | null }[] }> {
-    const ledgers = await this.ledgerService.getMyLedgers(user.id);
+    const ledgers = await this.ledgerService.getMyLedgers(user.id, name);
     return { ledgers };
   }
 
