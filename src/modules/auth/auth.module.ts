@@ -7,6 +7,8 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { MailerService } from './mailer.service';
+import { LedgerModule } from '../ledger/ledger.module';
 
 @Module({
   imports: [
@@ -18,9 +20,10 @@ import { JwtAuthGuard } from './jwt-auth.guard';
         expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
       },
     }),
+    LedgerModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard],
+  providers: [AuthService, MailerService, JwtStrategy, JwtAuthGuard],
   exports: [AuthService, JwtModule, JwtAuthGuard],
 })
 export class AuthModule {}

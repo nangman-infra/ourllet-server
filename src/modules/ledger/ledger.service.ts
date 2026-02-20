@@ -55,6 +55,23 @@ export class LedgerService {
     return { ledgerId: code, code };
   }
 
+  /** 가계부 만들 때 이름 지정 (회원가입 시 최초 가계부용) */
+  async createLedgerWithName(
+    userId: string,
+    name: string,
+  ): Promise<{ ledgerId: string; code: string }> {
+    const code = await this.generateUniqueCode();
+    const ledger = this.ledgerRepo.create({
+      id: code,
+      name: name.trim() || null,
+    });
+    await this.ledgerRepo.save(ledger);
+    await this.memberRepo.save(
+      this.memberRepo.create({ ledgerId: code, userId }),
+    );
+    return { ledgerId: code, code };
+  }
+
   /** 초대코드로 가계부 참여. 한 가계부당 최대 2명 */
   async joinByCode(userId: string, code: string): Promise<{ ledgerId: string }> {
     const normalized = code.replace(/\s/g, '').slice(0, INVITE_CODE_LENGTH);
@@ -95,8 +112,11 @@ export class LedgerService {
     return rows.map((r) => r.ledgerId);
   }
 
-  /** 현재 사용자가 속한 가계부 목록 (ledgerId + name) */
-  async getMyLedgers(userId: string): Promise<{ ledgerId: string; name: string | null }[]> {
+  /** 현재 사용자가 속한 가계부 목록 (ledgerId + name). name 있으면 해당 이름과 일치하는 것만 (초대코드 조회용) */
+  async getMyLedgers(
+    userId: string,
+    name?: string,
+  ): Promise<{ ledgerId: string; name: string | null }[]> {
     const memberRows = await this.memberRepo.find({
       where: { userId },
       select: ['ledgerId'],
@@ -108,10 +128,15 @@ export class LedgerService {
       select: ['id', 'name'],
     });
     const byId = new Map(ledgers.map((l) => [l.id, l.name]));
-    return memberRows.map((r) => ({
+    let list = memberRows.map((r) => ({
       ledgerId: r.ledgerId,
       name: byId.get(r.ledgerId) ?? null,
     }));
+    if (name != null && name.trim() !== '') {
+      const trimmed = name.trim();
+      list = list.filter((item) => item.name === trimmed);
+    }
+    return list;
   }
 
   /** 가계부 설정 수정 (이름 등). 멤버만 가능. */
