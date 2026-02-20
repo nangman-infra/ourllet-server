@@ -21,7 +21,8 @@ export class MailerService {
 
     try {
       const nodemailer = await import('nodemailer');
-      const transporter = nodemailer.default.createTransport({
+      const nm = nodemailer.default ?? nodemailer;
+      const transporter = nm.createTransport({
         host: smtpHost,
         port: parseInt(smtpPort ?? '587', 10),
         secure: process.env.SMTP_SECURE === 'true',
