@@ -95,6 +95,47 @@ export class LedgerService {
     return rows.map((r) => r.ledgerId);
   }
 
+  /** 현재 사용자가 속한 가계부 목록 (ledgerId + name) */
+  async getMyLedgers(userId: string): Promise<{ ledgerId: string; name: string | null }[]> {
+    const memberRows = await this.memberRepo.find({
+      where: { userId },
+      select: ['ledgerId'],
+      order: { ledgerId: 'ASC' },
+    });
+    if (memberRows.length === 0) return [];
+    const ledgers = await this.ledgerRepo.find({
+      where: memberRows.map((r) => ({ id: r.ledgerId })),
+      select: ['id', 'name'],
+    });
+    const byId = new Map(ledgers.map((l) => [l.id, l.name]));
+    return memberRows.map((r) => ({
+      ledgerId: r.ledgerId,
+      name: byId.get(r.ledgerId) ?? null,
+    }));
+  }
+
+  /** 가계부 설정 수정 (이름 등). 멤버만 가능. */
+  async updateLedger(
+    userId: string,
+    ledgerId: string,
+    updates: { name?: string },
+  ): Promise<{ ledgerId: string; name: string | null }> {
+    const normalized = ledgerId.replace(/\s/g, '').slice(0, 6);
+    if (normalized.length !== 6 || !/^\d+$/.test(normalized)) {
+      throw new BadRequestException('가계부 코드는 6자리 숫자예요.');
+    }
+    await this.ensureMember(userId, normalized);
+
+    const ledger = await this.ledgerRepo.findOne({ where: { id: normalized } });
+    if (!ledger) throw new NotFoundException(getNotFoundMessage());
+
+    if (updates.name !== undefined) {
+      ledger.name = updates.name === '' ? null : updates.name;
+      await this.ledgerRepo.save(ledger);
+    }
+    return { ledgerId: normalized, name: ledger.name };
+  }
+
   /** 해당 가계부 멤버인지 확인 */
   async isMember(userId: string, ledgerId: string): Promise<boolean> {
     const one = await this.memberRepo.findOne({
