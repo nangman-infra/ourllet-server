@@ -29,7 +29,7 @@ services:
       DATABASE_PASSWORD: ourllet1234
       DATABASE_NAME: ourllet
       NODE_ENV: production
-      CORS_ORIGIN: https://ourllet.junoshon.cloud
+      CORS_ORIGIN: https://ourllet.junoshon.cloud,http://localhost:3000
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       BACKEND_APP_URL: ${BACKEND_APP_URL:-}
