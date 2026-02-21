@@ -7,8 +7,8 @@
 ## 배경
 
 - **결산** 탭에서는 **월간 결산**을 합니다.
-- 해당 월에 **돈을 많이 쓴 지출 항목**을 조회하고, **항목 제목(title)** 기준으로 **파이차트**를 그립니다.
-- 백엔드에서 해당 월 지출을 제목별로 묶어 금액 합계를 내림차순으로 내려줍니다.
+- 파이차트 **전체 = 해당 월 총 수입(100%)**. 슬라이스는 **고정비·저축·지출(카테고리별)** 로 구성됩니다.
+- `totalIncome`을 100%로 두고, 각 `items[].amount` 비율로 파이를 그립니다.
 
 ---
 
@@ -26,17 +26,29 @@
 ```json
 {
   "period": "2026-02",
+  "totalIncome": 3000000,
   "items": [
-    { "title": "월세", "amount": 500000 },
-    { "title": "식비", "amount": 350000 },
-    { "title": "교통비", "amount": 120000 }
+    { "label": "월세", "amount": 300000, "type": "fixed" },
+    { "label": "관리비", "amount": 150000, "type": "fixed" },
+    { "label": "저축", "amount": 600000, "type": "savings" },
+    { "label": "식비", "amount": 400000, "type": "expense" },
+    { "label": "기타", "amount": 550000, "type": "expense" }
   ]
 }
 ```
 
-- `items`: 해당 기간 **지출(type=expense)** 만 모아, **제목(title)으로 그룹**한 뒤 **금액 합계**로 정렬(내림차순).
-- 같은 제목의 내역이 여러 건이면 금액이 합쳐집니다.
-- 해당 월 지출이 없으면 `items`는 빈 배열 `[]`.
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| period | string | YYYY-MM |
+| totalIncome | number | 해당 월 총 수입 (파이 100% 기준) |
+| items | array | 슬라이스 목록 (금액 합계 기준 정렬) |
+| items[].label | string | 표시 라벨 |
+| items[].amount | number | 금액 |
+| items[].type | string | `"fixed"` \| `"savings"` \| `"expense"` |
+
+- **fixed**: 고정비 (해당 월 적용분, excludedDates 반영).
+- **savings**: 해당 월 저축 합계 1개.
+- **expense**: 일반 지출을 카테고리별로 묶음. 기본 카테고리(월세, 관리비, 통신비, OTT, 구독, 대출 등)는 각각 슬라이스, 그 외는 **"기타"** 한 슬라이스.
 
 ---
 
@@ -50,10 +62,10 @@
 
 ## 프론트 구현 제안
 
-1. **결산** 탭에서 연·월 선택(또는 기본 이번 달) 후 `GET /v1/settlement?ledgerId=...&period=...` 호출.
-2. 응답 `items`를 이용해 **파이차트**绘制: 각 슬라이스 = `title`, 값 = `amount`.
-3. 툴팁/범례에 제목 + 금액(원) 표시.
-4. `items`가 비어 있으면 "이번 달 지출 내역이 없어요" 등 안내 메시지 표시.
+1. 연·월 선택 후 `GET /v1/settlement?ledgerId=...&period=...` 호출.
+2. 파이차트: 전체 = `totalIncome`(100%), 각 슬라이스 = `items[].label`, 값 = `items[].amount` (비율 = amount / totalIncome).
+3. `type`별로 색/스타일 구분 가능 (fixed / savings / expense).
+4. `items`가 비어 있으면 빈 상태 메시지 표시.
 
 ---
 
@@ -63,20 +75,19 @@
 결산 탭에 월간 결산 기능을 구현해줘.
 
 [기능]
-- 결산 탭에서 해당 월에 돈을 많이 쓴 지출 항목을 조회한다.
-- 그 항목의 **제목(title)** 기준으로 **파이차트**를 그린다.
-- 같은 제목의 지출은 금액이 합쳐져서 한 슬라이스로 나온다.
+- 파이차트 전체 = 해당 월 **총 수입(100%)**. 슬라이스는 고정비·저축·지출(카테고리별)로 구성.
+- 각 슬라이스: label(표시명), amount(금액), type("fixed"|"savings"|"expense").
 
 [API]
 - GET /api/v1/settlement?ledgerId=123456&period=YYYY-MM
 - 인증: Authorization: Bearer <JWT>
-- 응답: { period: "YYYY-MM", items: [ { title: string, amount: number }, ... ] }
-  - items는 해당 월 지출만, 제목별 금액 합계, 금액 내림차순.
+- 응답: { period, totalIncome, items: [ { label, amount, type }, ... ] }
+  - totalIncome = 해당 월 총 수입. 파이 비율 = (item.amount / totalIncome) * 100.
 
 [구현]
-- 연·월 선택(또는 기본 이번 달) 후 위 API 호출.
-- items로 파이차트 그리기 (슬라이스 = title, 값 = amount).
-- items가 비어 있으면 안내 메시지 표시.
+- 연·월 선택 후 API 호출.
+- totalIncome을 100%로 파이차트, items로 슬라이스 (label, amount, type 구분 표시).
+- items 비어 있으면 빈 상태 메시지.
 
 상세 스펙은 docs/FRONTEND_SETTLEMENT_PROMPT.md 를 참고해서 구현해줘.
 ```

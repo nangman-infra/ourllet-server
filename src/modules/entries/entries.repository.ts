@@ -34,7 +34,7 @@ export class EntriesRepository {
       type: dto.type,
       amount: dto.amount,
       title: dto.title,
-      category: dto.type === 'savings' && dto.category ? dto.category.trim() : null,
+      category: dto.category != null && dto.category !== '' ? dto.category.trim() : null,
       memo: dto.memo ?? null,
       date: dto.date,
     });
@@ -46,7 +46,7 @@ export class EntriesRepository {
       type: dto.type,
       amount: dto.amount,
       title: dto.title,
-      category: dto.type === 'savings' && dto.category ? dto.category.trim() : null,
+      category: dto.category != null && dto.category !== '' ? dto.category.trim() : null,
       memo: dto.memo ?? null,
       date: dto.date,
     });
@@ -72,7 +72,7 @@ export class EntriesRepository {
         type: dto.type,
         amount: dto.amount,
         title: dto.title,
-        category: dto.type === 'savings' && dto.category ? dto.category.trim() : null,
+        category: dto.category != null && dto.category !== '' ? dto.category.trim() : null,
         memo: dto.memo ?? null,
         date: dto.date,
       }),
@@ -135,5 +135,45 @@ export class EntriesRepository {
       .orderBy('SUM(e.amount)', 'DESC')
       .getRawMany<{ title: string; amount: string }>();
     return rows.map((r) => ({ title: r.title, amount: parseFloat(r.amount) }));
+  }
+
+  /** 해당 기간 특정 type 합계 (income 또는 savings) */
+  async getSumByType(
+    ledgerId: string,
+    start: string,
+    end: string,
+    type: 'income' | 'savings',
+  ): Promise<number> {
+    const r = await this.repo
+      .createQueryBuilder('e')
+      .select('COALESCE(SUM(e.amount), 0)', 'sum')
+      .where('e.ledgerId = :ledgerId', { ledgerId })
+      .andWhere('e.type = :type', { type })
+      .andWhere('e.date >= :start', { start })
+      .andWhere('e.date <= :end', { end })
+      .getRawOne<{ sum: string }>();
+    return r ? parseFloat(r.sum) : 0;
+  }
+
+  /** 해당 기간 지출(expense) 카테고리별 금액 합계. category null 가능 */
+  async getExpenseGroupByCategory(
+    ledgerId: string,
+    start: string,
+    end: string,
+  ): Promise<{ category: string | null; amount: number }[]> {
+    const rows = await this.repo
+      .createQueryBuilder('e')
+      .select('e.category', 'category')
+      .addSelect('SUM(e.amount)', 'amount')
+      .where('e.ledgerId = :ledgerId', { ledgerId })
+      .andWhere('e.type = :type', { type: 'expense' })
+      .andWhere('e.date >= :start', { start })
+      .andWhere('e.date <= :end', { end })
+      .groupBy('e.category')
+      .getRawMany<{ category: string | null; amount: string }>();
+    return rows.map((r) => ({
+      category: r.category ?? null,
+      amount: parseFloat(r.amount),
+    }));
   }
 }

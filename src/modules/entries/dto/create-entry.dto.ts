@@ -27,10 +27,11 @@ export class CreateEntryDto {
   })
   type: 'income' | 'expense' | 'savings';
 
-  @ValidateIf((o) => o.type === LEDGER_ENTRY_TYPE_SAVINGS)
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: '저축일 때는 카테고리를 선택해 주세요.' })
   @MaxLength(100, { message: '카테고리는 100자 이하여야 해요.' })
+  @ValidateIf((o) => o.type === LEDGER_ENTRY_TYPE_SAVINGS)
+  @IsNotEmpty({ message: '저축일 때는 카테고리를 선택해 주세요.' })
   category?: string;
 
   @IsNumber()
