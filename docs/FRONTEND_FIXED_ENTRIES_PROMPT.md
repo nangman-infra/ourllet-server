@@ -78,7 +78,7 @@
   ]
   ```
 - `type`: `"expense"`(지출) 또는 `"income"`(수입).
-- `title`: 고정비 항목 제목 (목록/상세 표시용).
+- `title`: 고정비 항목 제목 (목록/상세 표시용). 기존 데이터는 `null`일 수 있음 → 표시 시 `title ?? category` 사용 권장.
 - `dayOfMonth`: 1–31. 매월 해당 날짜에 발생하는 항목으로 표시하면 됩니다.
 
 ### 3. POST `/api/v1/fixed-entries`
