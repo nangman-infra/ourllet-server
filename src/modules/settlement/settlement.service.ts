@@ -60,6 +60,7 @@ export class SettlementService {
       }
     }
 
+    // totalIncome = 해당 월 총 수입만 (일반 수입 + 고정 수입). 지출·저축·고정비를 빼지 않음.
     const totalIncome = incomeFromEntries + fixedIncomeSum;
 
     // 저축: 합계 1개
