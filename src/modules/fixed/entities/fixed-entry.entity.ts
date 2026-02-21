@@ -25,6 +25,10 @@ export class FixedEntry {
   @Column({ type: 'varchar', length: 10 })
   type: FixedEntryType;
 
+  /** 고정비 항목 제목 (예: "우리집 월세", "넷플릭스") */
+  @Column({ type: 'varchar', length: 100 })
+  title: string;
+
   @Column({ type: 'varchar', length: 100 })
   category: string;
 

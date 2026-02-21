@@ -58,6 +58,7 @@ export class FixedService {
       ledgerId: dto.ledgerId,
       userId,
       type: dto.type,
+      title: dto.title.trim(),
       category: dto.category.trim(),
       amount: dto.amount,
       dayOfMonth: dto.dayOfMonth,
@@ -74,6 +75,7 @@ export class FixedService {
   ): Promise<FixedEntry> {
     const entry = await this.findOne(id, userId);
     if (dto.dayOfMonth != null) this.validateDayOfMonth(dto.dayOfMonth);
+    if (dto.title != null) entry.title = dto.title.trim();
     if (dto.category != null) entry.category = dto.category.trim();
     if (dto.amount != null) entry.amount = dto.amount;
     if (dto.dayOfMonth != null) entry.dayOfMonth = dto.dayOfMonth;

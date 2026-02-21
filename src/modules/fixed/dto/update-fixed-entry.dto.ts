@@ -8,6 +8,11 @@ export class UpdateFixedEntryDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   category?: string;
 
   @IsOptional()
