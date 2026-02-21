@@ -10,6 +10,7 @@ export class SummaryService {
   async getSummaryByPeriod(period: string, userId: string, ledgerId: string): Promise<{
     totalIncome: number;
     totalExpense: number;
+    totalSavings: number;
     balance: number;
     period: string;
   }> {
