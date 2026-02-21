@@ -84,16 +84,10 @@ export class EntriesRepository {
     period: string,
     ledgerId: string,
   ): Promise<{ totalIncome: number; totalExpense: number; totalSavings: number }> {
-    const [start, end] = [
-      `${period}-01`,
-      new Date(
-        new Date(`${period}-01`).getFullYear(),
-        new Date(`${period}-01`).getMonth() + 1,
-        0,
-      )
-        .toISOString()
-        .slice(0, 10),
-    ];
+    const [y, m] = period.split('-').map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    const start = `${period}-01`;
+    const end = `${period}-${String(lastDay).padStart(2, '0')}`;
 
     const result = await this.repo
       .createQueryBuilder('e')
@@ -153,6 +147,26 @@ export class EntriesRepository {
       .andWhere('e.date <= :end', { end })
       .getRawOne<{ sum: string }>();
     return r ? parseFloat(r.sum) : 0;
+  }
+
+  /** 해당 기간 수입(income) 건별 목록. 디버깅용 (결산 totalIncome 검증) */
+  async getIncomeEntriesInPeriod(
+    ledgerId: string,
+    start: string,
+    end: string,
+  ): Promise<{ id: string; date: string; amount: number }[]> {
+    const rows = await this.repo
+      .createQueryBuilder('e')
+      .select('e.id', 'id')
+      .addSelect('e.date', 'date')
+      .addSelect('e.amount', 'amount')
+      .where('e.ledgerId = :ledgerId', { ledgerId })
+      .andWhere('e.type = :type', { type: 'income' })
+      .andWhere('e.date >= :start', { start })
+      .andWhere('e.date <= :end', { end })
+      .orderBy('e.date', 'ASC')
+      .getRawMany<{ id: string; date: string; amount: string }>();
+    return rows.map((r) => ({ id: r.id, date: r.date, amount: parseFloat(r.amount) }));
   }
 
   /** 해당 기간 지출(expense) 카테고리별 금액 합계. category null 가능 */

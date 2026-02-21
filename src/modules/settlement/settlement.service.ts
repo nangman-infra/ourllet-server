@@ -24,22 +24,41 @@ export class SettlementService {
     period: string,
     userId: string,
     ledgerId: string,
+    options?: { debug?: boolean },
   ): Promise<{
     period: string;
     totalIncome: number;
     items: SettlementItem[];
+    _debug?: {
+      dateRange: { start: string; end: string };
+      incomeFromEntries: number;
+      fixedIncomeSum: number;
+      totalIncome: number;
+      incomeEntries: { id: string; date: string; amount: number }[];
+    };
   }> {
     if (!period || !PERIOD_PATTERN.test(period)) {
       throw new BadRequestException('period는 YYYY-MM 형식이어야 해요.');
     }
 
+    const [y, m] = period.split('-').map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    const dateRange = {
+      start: `${period}-01`,
+      end: `${period}-${String(lastDay).padStart(2, '0')}`,
+    };
+
     const defaultExpenseCategories = this.fixedService.getCategories().expense;
-    const [incomeFromEntries, savingsSum, expenseByCategory, fixedEntries] = await Promise.all([
-      this.entriesService.getSumByType(period, userId, ledgerId, 'income'),
-      this.entriesService.getSumByType(period, userId, ledgerId, 'savings'),
-      this.entriesService.getExpenseGroupByCategory(period, userId, ledgerId),
-      this.fixedService.findAll(userId, ledgerId),
-    ]);
+    const [incomeFromEntries, savingsSum, expenseByCategory, fixedEntries, incomeEntries] =
+      await Promise.all([
+        this.entriesService.getSumByType(period, userId, ledgerId, 'income'),
+        this.entriesService.getSumByType(period, userId, ledgerId, 'savings'),
+        this.entriesService.getExpenseGroupByCategory(period, userId, ledgerId),
+        this.fixedService.findAll(userId, ledgerId),
+        options?.debug
+          ? this.entriesService.getIncomeEntriesInPeriod(period, userId, ledgerId)
+          : Promise.resolve([]),
+      ]);
 
     const items: SettlementItem[] = [];
 
@@ -88,7 +107,28 @@ export class SettlementService {
 
     items.sort((a, b) => b.amount - a.amount);
 
-    return { period, totalIncome, items };
+    const result: {
+      period: string;
+      totalIncome: number;
+      items: SettlementItem[];
+      _debug?: {
+        dateRange: { start: string; end: string };
+        incomeFromEntries: number;
+        fixedIncomeSum: number;
+        totalIncome: number;
+        incomeEntries: { id: string; date: string; amount: number }[];
+      };
+    } = { period, totalIncome, items };
+    if (options?.debug) {
+      result._debug = {
+        dateRange,
+        incomeFromEntries,
+        fixedIncomeSum,
+        totalIncome,
+        incomeEntries,
+      };
+    }
+    return result;
   }
 
   private getOccurrenceDateInMonth(period: string, dayOfMonth: number): string {

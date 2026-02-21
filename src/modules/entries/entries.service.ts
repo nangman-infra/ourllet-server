@@ -148,6 +148,17 @@ export class EntriesService {
     return this.repository.getSumByType(ledgerId, start, end, type);
   }
 
+  /** 해당 월 수입(income) 건별 목록. 디버깅용 (결산 totalIncome 검증) */
+  async getIncomeEntriesInPeriod(
+    period: string,
+    userId: string,
+    ledgerId: string,
+  ): Promise<{ id: string; date: string; amount: number }[]> {
+    await this.ledgerService.ensureMember(userId, ledgerId);
+    const [start, end] = this.getPeriodBounds(period);
+    return this.repository.getIncomeEntriesInPeriod(ledgerId, start, end);
+  }
+
   /** 해당 월 지출 카테고리별 합계. ensureMember 후 호출 */
   async getExpenseGroupByCategory(
     period: string,
@@ -159,15 +170,12 @@ export class EntriesService {
     return this.repository.getExpenseGroupByCategory(ledgerId, start, end);
   }
 
+  /** period(YYYY-MM)의 첫날·마지막날. 타임존 영향 없이 YYYY-MM-DD 문자열로 반환 (toISOString 사용 시 UTC로 마지막 날이 하루 빠질 수 있음) */
   private getPeriodBounds(period: string): [string, string] {
+    const [y, m] = period.split('-').map(Number);
     const start = `${period}-01`;
-    const end = new Date(
-      new Date(`${period}-01`).getFullYear(),
-      new Date(`${period}-01`).getMonth() + 1,
-      0,
-    )
-      .toISOString()
-      .slice(0, 10);
+    const lastDay = new Date(y, m, 0).getDate();
+    const end = `${period}-${String(lastDay).padStart(2, '0')}`;
     return [start, end];
   }
 }
