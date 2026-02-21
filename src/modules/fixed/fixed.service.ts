@@ -52,6 +52,7 @@ export class FixedService {
   async create(dto: CreateFixedEntryDto, userId: string): Promise<FixedEntry> {
     await this.ledgerService.ensureMember(userId, dto.ledgerId);
     this.validateDayOfMonth(dto.dayOfMonth);
+    const excludedDates = this.normalizeExcludedDates(dto.excludedDates);
     const id = uuidv4();
     const entity = this.repo.create({
       id,
@@ -63,6 +64,7 @@ export class FixedService {
       amount: dto.amount,
       dayOfMonth: dto.dayOfMonth,
       memo: dto.memo?.trim() ?? null,
+      excludedDates: excludedDates.length > 0 ? excludedDates : null,
     });
     return this.repo.save(entity);
   }
@@ -80,6 +82,10 @@ export class FixedService {
     if (dto.amount != null) entry.amount = dto.amount;
     if (dto.dayOfMonth != null) entry.dayOfMonth = dto.dayOfMonth;
     if (dto.memo !== undefined) entry.memo = dto.memo?.trim() ?? null;
+    if (dto.excludedDates !== undefined) {
+      const normalized = this.normalizeExcludedDates(dto.excludedDates);
+      entry.excludedDates = normalized.length > 0 ? normalized : null;
+    }
     return this.repo.save(entry);
   }
 
@@ -93,5 +99,22 @@ export class FixedService {
     if (!Number.isInteger(day) || day < 1 || day > 31) {
       throw new BadRequestException('지출/수입 날짜는 1–31 사이의 정수여야 해요.');
     }
+  }
+
+  /** YYYY-MM-DD 형식 검증 후 중복 제거, 정렬 */
+  private normalizeExcludedDates(dates: string[] | undefined): string[] {
+    if (!Array.isArray(dates) || dates.length === 0) return [];
+    const YYYY_MM_DD = /^\d{4}-\d{2}-\d{2}$/;
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const d of dates) {
+      const s = typeof d === 'string' ? d.trim() : '';
+      if (!s || !YYYY_MM_DD.test(s)) continue;
+      if (seen.has(s)) continue;
+      seen.add(s);
+      result.push(s);
+    }
+    result.sort();
+    return result;
   }
 }

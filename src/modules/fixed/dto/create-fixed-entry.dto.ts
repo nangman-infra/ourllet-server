@@ -4,10 +4,12 @@ import {
   IsOptional,
   IsString,
   IsInt,
+  IsArray,
+  ArrayMaxSize,
+  Matches,
   Min,
   Max,
   MaxLength,
-  Matches,
 } from 'class-validator';
 import { FIXED_TYPE_EXPENSE, FIXED_TYPE_INCOME } from '../entities/fixed-entry.entity';
 
@@ -42,4 +44,11 @@ export class CreateFixedEntryDto {
   @IsString()
   @MaxLength(500)
   memo?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { each: true, message: 'excludedDates 요소는 YYYY-MM-DD 형식이어야 해요.' })
+  @ArrayMaxSize(366, { message: 'excludedDates는 366개 이하여야 해요.' })
+  excludedDates?: string[];
 }
