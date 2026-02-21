@@ -50,11 +50,21 @@ export class FixedEntry {
   @Column({ type: 'text', nullable: true })
   memo: string | null;
 
+  /** 해당 날짜에는 고정비 미적용 (YYYY-MM-DD). 내역 탭 "그 달만 취소" 시 추가 */
+  @Column({ type: 'simple-array', nullable: true })
+  excludedDates: string[] | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
+
+  /** API 응답 시 excludedDates null → [] 로 내려줌 */
+  toJSON(): Record<string, unknown> {
+    const { excludedDates, ...rest } = this;
+    return { ...rest, excludedDates: excludedDates ?? [] };
+  }
 }
 
 /** 기본 제공 카테고리 (고정비 지출) */
