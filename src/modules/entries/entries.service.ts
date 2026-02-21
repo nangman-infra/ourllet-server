@@ -127,21 +127,47 @@ export class EntriesService {
     ledgerId: string,
   ): Promise<{ period: string; items: { title: string; amount: number }[] }> {
     await this.ledgerService.ensureMember(userId, ledgerId);
-    const [start, end] = [
-      `${period}-01`,
-      new Date(
-        new Date(`${period}-01`).getFullYear(),
-        new Date(`${period}-01`).getMonth() + 1,
-        0,
-      )
-        .toISOString()
-        .slice(0, 10),
-    ];
+    const [start, end] = this.getPeriodBounds(period);
     const items = await this.repository.getExpenseBreakdownByTitle(
       ledgerId,
       start,
       end,
     );
     return { period, items };
+  }
+
+  /** 해당 월 특정 type 합계 (income | savings). ensureMember 후 호출 */
+  async getSumByType(
+    period: string,
+    userId: string,
+    ledgerId: string,
+    type: 'income' | 'savings',
+  ): Promise<number> {
+    await this.ledgerService.ensureMember(userId, ledgerId);
+    const [start, end] = this.getPeriodBounds(period);
+    return this.repository.getSumByType(ledgerId, start, end, type);
+  }
+
+  /** 해당 월 지출 카테고리별 합계. ensureMember 후 호출 */
+  async getExpenseGroupByCategory(
+    period: string,
+    userId: string,
+    ledgerId: string,
+  ): Promise<{ category: string | null; amount: number }[]> {
+    await this.ledgerService.ensureMember(userId, ledgerId);
+    const [start, end] = this.getPeriodBounds(period);
+    return this.repository.getExpenseGroupByCategory(ledgerId, start, end);
+  }
+
+  private getPeriodBounds(period: string): [string, string] {
+    const start = `${period}-01`;
+    const end = new Date(
+      new Date(`${period}-01`).getFullYear(),
+      new Date(`${period}-01`).getMonth() + 1,
+      0,
+    )
+      .toISOString()
+      .slice(0, 10);
+    return [start, end];
   }
 }
