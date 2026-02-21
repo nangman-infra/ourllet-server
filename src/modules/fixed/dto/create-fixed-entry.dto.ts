@@ -22,6 +22,10 @@ export class CreateFixedEntryDto {
   type: 'expense' | 'income';
 
   @IsString()
+  @MaxLength(100, { message: '제목은 100자 이하여야 해요.' })
+  title: string;
+
+  @IsString()
   @MaxLength(100, { message: '카테고리는 100자 이하여야 해요.' })
   category: string;
 

@@ -11,6 +11,7 @@
 
 ### 고정비 지출
 
+- **제목**: 항목 제목 (예: "우리집 월세", "넷플릭스"). 필수, 최대 100자.
 - **카테고리**: 기본 제공 — 월세, 관리비, 통신비, OTT, 구독, 대출. 사용자가 직접 입력해 추가 가능.
 - **금액**: 필수.
 - **지출 날짜**: 매월 몇 일인지 1–31 (dayOfMonth).
@@ -18,6 +19,7 @@
 
 ### 고정비 수입
 
+- **제목**: 항목 제목 (예: "본업 월급", "프리랜서"). 필수, 최대 100자.
 - **카테고리**: 기본 제공 — 월급, 부업. 사용자가 직접 입력해 추가 가능.
 - **금액**: 필수.
 - **수입 날짜**: 매월 몇 일인지 1–31 (dayOfMonth).
@@ -33,8 +35,8 @@
 |------|--------|------|------|
 | 기본 카테고리 | GET | `/api/v1/fixed-entries/categories` | 지출/수입 기본 카테고리 목록 |
 | 고정비 목록 | GET | `/api/v1/fixed-entries?ledgerId=123456` | 해당 가계부 고정비 전체 |
-| 고정비 추가 | POST | `/api/v1/fixed-entries` | Body: ledgerId, type, category, amount, dayOfMonth, memo(선택) |
-| 고정비 수정 | PUT | `/api/v1/fixed-entries/:id` | Body: 수정할 필드만 (type, category, amount, dayOfMonth, memo) |
+| 고정비 추가 | POST | `/api/v1/fixed-entries` | Body: ledgerId, type, title, category, amount, dayOfMonth, memo(선택) |
+| 고정비 수정 | PUT | `/api/v1/fixed-entries/:id` | Body: 수정할 필드만 (type, title, category, amount, dayOfMonth, memo) |
 | 고정비 삭제 | DELETE | `/api/v1/fixed-entries/:id` | - |
 
 ---
@@ -65,6 +67,7 @@
       "ledgerId": "123456",
       "userId": "uuid",
       "type": "expense",
+      "title": "우리집 월세",
       "category": "월세",
       "amount": 500000,
       "dayOfMonth": 5,
@@ -75,6 +78,7 @@
   ]
   ```
 - `type`: `"expense"`(지출) 또는 `"income"`(수입).
+- `title`: 고정비 항목 제목 (목록/상세 표시용).
 - `dayOfMonth`: 1–31. 매월 해당 날짜에 발생하는 항목으로 표시하면 됩니다.
 
 ### 3. POST `/api/v1/fixed-entries`
@@ -84,6 +88,7 @@
   {
     "ledgerId": "123456",
     "type": "expense",
+    "title": "우리집 월세",
     "category": "월세",
     "amount": 500000,
     "dayOfMonth": 5,
@@ -92,11 +97,12 @@
   ```
   - `ledgerId`: 6자리 숫자 문자열 (필수).
   - `type`: `"expense"` | `"income"` (필수).
+  - `title`: 고정비 항목 제목, 최대 100자 (필수).
   - `category`: 문자열, 최대 100자 (필수). 기본 카테고리 또는 사용자 입력.
   - `amount`: 양수 숫자 (필수).
   - `dayOfMonth`: 1–31 정수 (필수).
   - `memo`: 문자열, 최대 500자 (선택).
-- **응답**: 생성된 고정비 엔티티 (id, ledgerId, userId, type, category, amount, dayOfMonth, memo, createdAt, updatedAt).
+- **응답**: 생성된 고정비 엔티티 (id, ledgerId, userId, type, title, category, amount, dayOfMonth, memo, createdAt, updatedAt).
 
 ### 4. PUT `/api/v1/fixed-entries/:id`
 
@@ -104,13 +110,14 @@
 - **Body**: 수정할 필드만 포함. 모두 선택(partial).
   ```json
   {
+    "title": "아파트 관리비",
     "category": "관리비",
     "amount": 50000,
     "dayOfMonth": 10,
     "memo": "매월 10일"
   }
   ```
-  - `type`, `category`, `amount`, `dayOfMonth`, `memo` 중 필요한 것만 보내면 됩니다.
+  - `type`, `title`, `category`, `amount`, `dayOfMonth`, `memo` 중 필요한 것만 보내면 됩니다.
 - **응답**: 수정된 고정비 엔티티.
 
 ### 5. DELETE `/api/v1/fixed-entries/:id`
@@ -134,7 +141,7 @@
 1. **추가 탭**에 "고정비 지출" / "고정비 수입" 섹션을 두거나, 탭/스위치로 구분.
 2. 진입 시 `GET /api/v1/fixed-entries/categories`로 기본 카테고리를 받아, 지출/수입 폼의 카테고리 선택 옵션으로 사용. 사용자 직접 입력(커스텀 카테고리)도 허용.
 3. 현재 선택된 가계부 `ledgerId`로 `GET /api/v1/fixed-entries?ledgerId=...` 호출해 목록 표시. 지출/수입 필터링 표시 권장.
-4. 추가: 폼에서 `ledgerId`, `type`, `category`, `amount`, `dayOfMonth`, `memo` 입력 후 `POST /api/v1/fixed-entries` 호출.
+4. 추가: 폼에서 `ledgerId`, `type`, `title`, `category`, `amount`, `dayOfMonth`, `memo` 입력 후 `POST /api/v1/fixed-entries` 호출. 목록/카드에는 `title`을 prominently 표시.
 5. 수정: 항목 선택 후 `PUT /api/v1/fixed-entries/:id` 호출.
 6. 삭제: 항목 삭제 시 `DELETE /api/v1/fixed-entries/:id` 호출.
 
@@ -146,18 +153,20 @@
 추가 탭에 "고정비 지출"과 "고정비 수입" 기능을 구현해줘.
 
 [고정비 지출]
+- 제목: 항목 제목 (예: "우리집 월세", "넷플릭스") — 필수, 목록/카드에 표시
 - 카테고리: 기본값 월세, 관리비, 통신비, OTT, 구독, 대출 + 사용자 직접 입력 가능
 - 금액, 매월 지출 날짜(1–31), 메모(선택)
 
 [고정비 수입]
+- 제목: 항목 제목 (예: "본업 월급", "부업") — 필수, 목록/카드에 표시
 - 카테고리: 기본값 월급, 부업 + 사용자 직접 입력 가능
 - 금액, 매월 수입 날짜(1–31), 메모(선택)
 
 백엔드 API (모두 Authorization: Bearer <JWT> 필요):
 - GET /api/v1/fixed-entries/categories → { expense: string[], income: string[] } 기본 카테고리
-- GET /api/v1/fixed-entries?ledgerId=123456 → 해당 가계부 고정비 목록 (ledgerId는 현재 선택된 가계부 6자리)
-- POST /api/v1/fixed-entries → Body: { ledgerId, type: "expense"|"income", category, amount, dayOfMonth, memo? }
-- PUT /api/v1/fixed-entries/:id → Body: 수정할 필드만 (type, category, amount, dayOfMonth, memo)
+- GET /api/v1/fixed-entries?ledgerId=123456 → 해당 가계부 고정비 목록 (ledgerId는 현재 선택된 가계부 6자리). 각 항목에 title, category 포함.
+- POST /api/v1/fixed-entries → Body: { ledgerId, type: "expense"|"income", title, category, amount, dayOfMonth, memo? }
+- PUT /api/v1/fixed-entries/:id → Body: 수정할 필드만 (type, title, category, amount, dayOfMonth, memo)
 - DELETE /api/v1/fixed-entries/:id
 
 상세 스펙과 에러 처리 내용은 docs/FRONTEND_FIXED_ENTRIES_PROMPT.md 를 참고해서 구현해줘.
