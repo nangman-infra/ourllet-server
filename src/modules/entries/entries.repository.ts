@@ -116,4 +116,24 @@ export class EntriesRepository {
     }
     return { totalIncome, totalExpense, totalSavings };
   }
+
+  /** 해당 기간 지출(type=expense) 항목별 금액 합계. 제목(title)으로 그룹, 금액 내림차순 (결산 파이차트용) */
+  async getExpenseBreakdownByTitle(
+    ledgerId: string,
+    start: string,
+    end: string,
+  ): Promise<{ title: string; amount: number }[]> {
+    const rows = await this.repo
+      .createQueryBuilder('e')
+      .select('e.title', 'title')
+      .addSelect('SUM(e.amount)', 'amount')
+      .where('e.ledgerId = :ledgerId', { ledgerId })
+      .andWhere('e.type = :type', { type: 'expense' })
+      .andWhere('e.date >= :start', { start })
+      .andWhere('e.date <= :end', { end })
+      .groupBy('e.title')
+      .orderBy('SUM(e.amount)', 'DESC')
+      .getRawMany<{ title: string; amount: string }>();
+    return rows.map((r) => ({ title: r.title, amount: parseFloat(r.amount) }));
+  }
 }

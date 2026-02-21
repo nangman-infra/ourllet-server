@@ -119,4 +119,29 @@ export class EntriesService {
       period,
     };
   }
+
+  /** 해당 월 지출 항목별 금액 집계 (결산 탭 파이차트용). 제목으로 그룹, 금액 내림차순 */
+  async getExpenseBreakdownByTitle(
+    period: string,
+    userId: string,
+    ledgerId: string,
+  ): Promise<{ period: string; items: { title: string; amount: number }[] }> {
+    await this.ledgerService.ensureMember(userId, ledgerId);
+    const [start, end] = [
+      `${period}-01`,
+      new Date(
+        new Date(`${period}-01`).getFullYear(),
+        new Date(`${period}-01`).getMonth() + 1,
+        0,
+      )
+        .toISOString()
+        .slice(0, 10),
+    ];
+    const items = await this.repository.getExpenseBreakdownByTitle(
+      ledgerId,
+      start,
+      end,
+    );
+    return { period, items };
+  }
 }
