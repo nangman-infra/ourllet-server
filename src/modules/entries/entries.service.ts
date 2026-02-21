@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { EntriesRepository } from './entries.repository';
 import { LedgerService } from '../ledger/ledger.service';
 import { CreateEntryDto } from './dto/create-entry.dto';
-import { LedgerEntry } from './entities/ledger-entry.entity';
+import { LedgerEntry, DEFAULT_SAVINGS_CATEGORIES } from './entities/ledger-entry.entity';
 import { getNotFoundMessage } from '../../common/filters/http-exception.filter';
 
 @Injectable()
@@ -14,6 +14,11 @@ export class EntriesService {
     private readonly repository: EntriesRepository,
     private readonly ledgerService: LedgerService,
   ) {}
+
+  /** 저축 기본 카테고리 (예금, 적금, 주식, 채권). 직접 추가도 가능 */
+  getSavingsCategories(): string[] {
+    return [...DEFAULT_SAVINGS_CATEGORIES];
+  }
 
   async findAll(userId: string, ledgerId: string): Promise<LedgerEntry[]> {
     await this.ledgerService.ensureMember(userId, ledgerId);
@@ -99,16 +104,18 @@ export class EntriesService {
   ): Promise<{
     totalIncome: number;
     totalExpense: number;
+    totalSavings: number;
     balance: number;
     period: string;
   }> {
     await this.ledgerService.ensureMember(userId, ledgerId);
-    const { totalIncome, totalExpense } =
+    const { totalIncome, totalExpense, totalSavings } =
       await this.repository.getSummaryByPeriod(period, ledgerId);
     return {
       totalIncome,
       totalExpense,
-      balance: totalIncome - totalExpense,
+      totalSavings,
+      balance: totalIncome - (totalExpense + totalSavings),
       period,
     };
   }

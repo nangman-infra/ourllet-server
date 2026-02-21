@@ -17,6 +17,7 @@ export class SummaryController {
   ): Promise<{
     totalIncome: number;
     totalExpense: number;
+    totalSavings: number;
     balance: number;
     period: string;
   }> {

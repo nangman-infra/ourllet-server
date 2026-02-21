@@ -6,8 +6,14 @@ import {
   IsNotEmpty,
   Matches,
   Min,
+  MaxLength,
+  ValidateIf,
 } from 'class-validator';
-import { LEDGER_ENTRY_TYPE_EXPENSE, LEDGER_ENTRY_TYPE_INCOME } from '../entities/ledger-entry.entity';
+import {
+  LEDGER_ENTRY_TYPE_EXPENSE,
+  LEDGER_ENTRY_TYPE_INCOME,
+  LEDGER_ENTRY_TYPE_SAVINGS,
+} from '../entities/ledger-entry.entity';
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -16,10 +22,16 @@ export class CreateEntryDto {
   @Matches(/^\d{6}$/, { message: 'ledgerId는 6자리 숫자예요.' })
   ledgerId: string;
 
-  @IsIn([LEDGER_ENTRY_TYPE_INCOME, LEDGER_ENTRY_TYPE_EXPENSE], {
-    message: 'type은 income 또는 expense여야 해요.',
+  @IsIn([LEDGER_ENTRY_TYPE_INCOME, LEDGER_ENTRY_TYPE_EXPENSE, LEDGER_ENTRY_TYPE_SAVINGS], {
+    message: 'type은 income, expense, savings 중 하나여야 해요.',
   })
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'savings';
+
+  @ValidateIf((o) => o.type === LEDGER_ENTRY_TYPE_SAVINGS)
+  @IsString()
+  @IsNotEmpty({ message: '저축일 때는 카테고리를 선택해 주세요.' })
+  @MaxLength(100, { message: '카테고리는 100자 이하여야 해요.' })
+  category?: string;
 
   @IsNumber()
   @Min(0.01, { message: 'amount는 양수여야 해요.' })

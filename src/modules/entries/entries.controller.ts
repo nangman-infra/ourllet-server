@@ -27,6 +27,11 @@ const LEDGER_ID_PATTERN = /^\d{6}$/;
 export class EntriesController {
   constructor(private readonly entriesService: EntriesService) {}
 
+  @Get('savings-categories')
+  getSavingsCategories(): string[] {
+    return this.entriesService.getSavingsCategories();
+  }
+
   @Get()
   async list(
     @Query('ledgerId') ledgerId: string,

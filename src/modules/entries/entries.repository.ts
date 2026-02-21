@@ -34,6 +34,7 @@ export class EntriesRepository {
       type: dto.type,
       amount: dto.amount,
       title: dto.title,
+      category: dto.type === 'savings' && dto.category ? dto.category.trim() : null,
       memo: dto.memo ?? null,
       date: dto.date,
     });
@@ -45,6 +46,7 @@ export class EntriesRepository {
       type: dto.type,
       amount: dto.amount,
       title: dto.title,
+      category: dto.type === 'savings' && dto.category ? dto.category.trim() : null,
       memo: dto.memo ?? null,
       date: dto.date,
     });
@@ -70,6 +72,7 @@ export class EntriesRepository {
         type: dto.type,
         amount: dto.amount,
         title: dto.title,
+        category: dto.type === 'savings' && dto.category ? dto.category.trim() : null,
         memo: dto.memo ?? null,
         date: dto.date,
       }),
@@ -80,7 +83,7 @@ export class EntriesRepository {
   async getSummaryByPeriod(
     period: string,
     ledgerId: string,
-  ): Promise<{ totalIncome: number; totalExpense: number }> {
+  ): Promise<{ totalIncome: number; totalExpense: number; totalSavings: number }> {
     const [start, end] = [
       `${period}-01`,
       new Date(
@@ -104,11 +107,13 @@ export class EntriesRepository {
 
     let totalIncome = 0;
     let totalExpense = 0;
+    let totalSavings = 0;
     for (const row of result) {
       const sum = parseFloat(row.sum);
       if (row.type === 'income') totalIncome = sum;
-      else totalExpense = sum;
+      else if (row.type === 'expense') totalExpense = sum;
+      else if (row.type === 'savings') totalSavings = sum;
     }
-    return { totalIncome, totalExpense };
+    return { totalIncome, totalExpense, totalSavings };
   }
 }

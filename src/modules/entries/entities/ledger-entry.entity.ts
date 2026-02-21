@@ -7,7 +7,11 @@ import {
 
 export const LEDGER_ENTRY_TYPE_INCOME = 'income';
 export const LEDGER_ENTRY_TYPE_EXPENSE = 'expense';
-export type LedgerEntryType = typeof LEDGER_ENTRY_TYPE_INCOME | typeof LEDGER_ENTRY_TYPE_EXPENSE;
+export const LEDGER_ENTRY_TYPE_SAVINGS = 'savings';
+export type LedgerEntryType =
+  | typeof LEDGER_ENTRY_TYPE_INCOME
+  | typeof LEDGER_ENTRY_TYPE_EXPENSE
+  | typeof LEDGER_ENTRY_TYPE_SAVINGS;
 
 @Entity('ledger_entries')
 export class LedgerEntry {
@@ -37,6 +41,10 @@ export class LedgerEntry {
   @Column({ type: 'varchar', length: 255 })
   title: string;
 
+  /** 저축(type=savings)일 때만 사용. 예금, 적금, 주식, 채권 등 */
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  category: string | null;
+
   @Column({ type: 'text', nullable: true })
   memo: string | null;
 
@@ -46,3 +54,6 @@ export class LedgerEntry {
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }
+
+/** 저축 기본 카테고리 (직접 추가 가능) */
+export const DEFAULT_SAVINGS_CATEGORIES = ['예금', '적금', '주식', '채권'] as const;
