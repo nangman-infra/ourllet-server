@@ -13,7 +13,6 @@ import { Ledger } from './modules/ledger/entities/ledger.entity';
 import { LedgerMember } from './modules/ledger/entities/ledger-member.entity';
 import { FixedEntry } from './modules/fixed/entities/fixed-entry.entity';
 import { FixedModule } from './modules/fixed/fixed.module';
-import { SettlementModule } from './modules/settlement/settlement.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 @Module({
@@ -38,7 +37,6 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     EntriesModule,
     SummaryModule,
     FixedModule,
-    SettlementModule,
   ],
   providers: [
     {
